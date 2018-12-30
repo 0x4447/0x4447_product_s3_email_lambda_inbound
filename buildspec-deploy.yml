@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo Entered the install phase...
+      - npm install
+  pre_build:
+    commands:
+      - echo Entered the pre_build phase...
+      - echo $CODEBUILD_SOURCE_VERSION
+      - PULL_REQUEST=true
+      - echo $CODEBUILD_SOURCE_VERSION | grep -q "pr" || PULL_REQUEST=false
+  build:
+    commands:
+      - echo Entered the build phase on `date`...
+  post_build:
+    commands:
+      - echo Entered the post_build phase...
+      - if $PULL_REQUEST; then
+          echo "Site not deployed becasue this is a Pull Request.";
+        else
+          echo "Site not deployed becasue this is a Pull Request.";
+        fi
+      - echo Build completed on `date`.
