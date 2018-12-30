@@ -1,0 +1,19 @@
+{
+  "name": "0x4447-project-email-lambda-inbound",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0x4447/0x4447-Project-Email-Lambda-Inbound.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/0x4447/0x4447-Project-Email-Lambda-Inbound/issues"
+  },
+  "homepage": "https://github.com/0x4447/0x4447-Project-Email-Lambda-Inbound#readme"
+}
