@@ -3,18 +3,7 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo Entered the install phase...
       - npm install
-  pre_build:
-    commands:
-      - echo Entered the pre_build phase...
-  build:
-    commands:
-      - echo Entered the build phase on `date`...
-  post_build:
-    commands:
-      - echo Entered the post_build phase...
-      - echo Build completed on `date`.
 artifacts:
   type: zip
   files:
