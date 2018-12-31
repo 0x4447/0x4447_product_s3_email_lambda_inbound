@@ -16,6 +16,7 @@ phases:
       - echo Entered the post_build phase...
       - echo Build completed on `date`.
 artifacts:
+  type: zip
   files:
     - "**/*"
   discard-paths: no
