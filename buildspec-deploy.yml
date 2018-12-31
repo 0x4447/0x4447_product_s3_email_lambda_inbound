@@ -1,11 +1,8 @@
 version: 0.2
 
 phases:
-  install:
-    commands:
-      - npm install
-artifacts:
-  type: zip
-  files:
-    - "**/*"
-  discard-paths: no
+  post_build:
+    finally:
+      - S3_BUCKET=$CODEBUILD_SOURCE_VERSION
+      - S3_OBJECT_KEY=$CODEBUILD_SOURCE_VERSION
+      - aws lambda update-function-code --function-name $FUNCTION_NAME --s3-bucket $S3_BUCKET --s3-key $S3_OBJECT_KEY
