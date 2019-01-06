@@ -3,6 +3,7 @@ version: 0.2
 phases:
   post_build:
     finally:
-      - S3_BUCKET=$CODEBUILD_SOURCE_VERSION
-      - S3_OBJECT_KEY=$CODEBUILD_SOURCE_VERSION
-      - aws lambda update-function-code --function-name $FUNCTION_NAME --s3-bucket $S3_BUCKET --s3-key $S3_OBJECT_KEY
+      - BUCKET=${CODEBUILD_SOURCE_VERSION##*:}   # After
+      - BUCKET=${CODEBUILD_SOURCE_VERSION%%/*}    # Before
+      - KEY=${CODEBUILD_SOURCE_VERSION#*/}
+      - aws lambda update-function-code --function-name $FUNCTION_NAME --s3-bucket $BUCKET --s3-key $KEY
