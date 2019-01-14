@@ -4,6 +4,8 @@
 //
 exports.handler = async (event) => {
 
+	console.log(event);
+
 	//
 	//	->	Return a positive response
 	//
