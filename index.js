@@ -4,7 +4,15 @@
 //
 exports.handler = async (event) => {
 
-	console.log(event);
+	let from = event.Records[0].ses.email.commonHeaders.from[0];
+	let to = event.Records[0].ses.email.commonHeaders.to[0];
+	let date = event.Records[0].ses.email.commonHeaders.date;
+	let message_id = event.Records[0].ses.email.messageId;
+
+	console.log("From: ", from);
+	console.log("to: ", to);
+	console.log("date: ", date);
+	console.log("message_id: ", message_id);
 
 	//
 	//	->	Return a positive response
