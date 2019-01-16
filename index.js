@@ -148,10 +148,15 @@ function copy_the_email(container)
 			Key: container.path + "/" + container.subject
 		};
 
+		console.log(params)
+
 		//
 		//	->	Execute the query.
 		//
 		s3.copyObject(params, function(error, data) {
+
+			console.log(error)
+			console.log(data)
 
 			//
 			//	1.	Check for internal errors.
@@ -188,10 +193,16 @@ function delete_the_email(container)
 			Key: "_inbound/" + container.message_id
 		};
 
+		console.log(params)
+
+
 		//
 		//	->	Execute the query.
 		//
 		s3.deleteObject(params, function(error, data) {
+
+			console.log(error)
+			console.log(data)
 
 			//
 			//	1.	Check for internal errors.
