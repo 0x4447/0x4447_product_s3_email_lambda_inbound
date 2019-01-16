@@ -24,8 +24,6 @@ exports.handler = async (event) => {
 		message_id: event.Records[0].ses.mail.messageId
 	}
 
-	console.log(container);
-
 	//
 	//	->	Start the chain.
 	//
@@ -33,6 +31,10 @@ exports.handler = async (event) => {
 		.then(function(container) {
 
 			return copy_the_email(container);
+
+		}).then(function(container) {
+
+			return delete_the_email(container);
 
 		}).then(function(container) {
 
@@ -115,8 +117,6 @@ function extract_data(container)
 					+ "/" +
 					company_account;
 
-		console.log(path);
-
 		//
 		//	8.	Save the path for the next promise.
 		//
@@ -147,8 +147,6 @@ function copy_the_email(container)
 			CopySource: process.env.BUCKET + "/_inbound/" + container.message_id,
 			Key: container.path + "/" + container.subject
 		};
-
-		console.log(params)
 
 		//
 		//	->	Execute the query.
@@ -187,7 +185,7 @@ function delete_the_email(container)
 		//
 		let params = {
 			Bucket: process.env.BUCKET,
-			Key: "/_inbound/" + container.message_id
+			Key: "_inbound/" + container.message_id
 		};
 
 		//
