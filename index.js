@@ -144,7 +144,7 @@ function copy_the_email(container)
 		//
 		let params = {
 			Bucket: process.env.BUCKET,
-			CopySource: "_inbound/" + container.message_id,
+			CopySource: process.env.BUCKET + "/_inbound/" + container.message_id,
 			Key: container.path + "/" + container.subject
 		};
 
