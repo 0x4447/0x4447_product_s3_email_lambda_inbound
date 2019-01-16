@@ -1,4 +1,11 @@
-let AWS = requre('aws-sdk');
+let AWS = require('aws-sdk');
+
+//
+//	Initialize S3.
+//
+let s3 = new AWS.S3({
+	apiVersion: '2006-03-01'
+});
 
 //
 //	This Lambda will filter all the incoming emails based on their From and To
@@ -24,6 +31,10 @@ exports.handler = async (event) => {
 	//
 	extract_data(container)
 		.then(function(container) {
+
+			return copy_the_email(container);
+
+		}).then(function(container) {
 
 			return true;
 
@@ -51,6 +62,8 @@ exports.handler = async (event) => {
 function extract_data(container)
 {
 	return new Promise(function(resolve, reject) {
+
+		console.info("extract_data");
 
 		//
 		//	1.	Extract all the information
@@ -95,7 +108,7 @@ function extract_data(container)
 		//		so it is properly organized.
 		//
 		let path = 	to_domain
-					+ "/" +
+					+ "/Inbox/" +
 					to_path
 					+ "/" +
 					company_name
@@ -124,14 +137,18 @@ function copy_the_email(container)
 {
 	return new Promise(function(resolve, reject) {
 
+		console.info("copy_the_email");
+
 		//
 		//	1.	Set the query.
 		//
 		let params = {
 			Bucket: process.env.BUCKET,
-			CopySource: "/_inbound/" + container.message_id,
+			CopySource: "_inbound/" + container.message_id,
 			Key: container.path + "/" + container.subject
 		};
+
+		console.log(params)
 
 		//
 		//	->	Execute the query.
@@ -162,6 +179,8 @@ function copy_the_email(container)
 function delete_the_email(container)
 {
 	return new Promise(function(resolve, reject) {
+
+		console.info("delete_the_email");
 
 		//
 		//	1.	Set the query.
