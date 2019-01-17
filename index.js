@@ -110,12 +110,16 @@ function extract_data(container)
 		//		so it is properly organized.
 		//
 		let path = 	to_domain
-					+ "/Inbox/" +
-					to_path
-					+ "/" +
-					company_name
-					+ "/" +
-					company_account;
+					+ "/Inbox/"
+					+ to_path
+					+ "/"
+					+ company_name
+					+ "/"
+					+ company_account
+					+ "/"
+					+ container.date
+					+ " - "
+					+ container.subject
 
 		//
 		//	8.	Save the path for the next promise.
@@ -145,18 +149,13 @@ function copy_the_email(container)
 		let params = {
 			Bucket: process.env.BUCKET,
 			CopySource: process.env.BUCKET + "/_inbound/" + container.message_id,
-			Key: container.path + "/" + container.subject
+			Key: container.path
 		};
-
-		console.log(params)
 
 		//
 		//	->	Execute the query.
 		//
 		s3.copyObject(params, function(error, data) {
-
-			console.log(error)
-			console.log(data)
 
 			//
 			//	1.	Check for internal errors.
