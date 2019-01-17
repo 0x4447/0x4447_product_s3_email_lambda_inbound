@@ -11,7 +11,7 @@ let s3 = new AWS.S3({
 //	This Lambda will filter all the incoming emails based on their From and To
 //	field.
 //
-exports.handler = async (event) => {
+exports.handler = (event) => {
 
 	//
 	//	1.	This JS object will contain all the data within the chain.
