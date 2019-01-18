@@ -24,6 +24,8 @@ exports.handler = (event) => {
 		message_id: event.Records[0].ses.mail.messageId
 	}
 
+	console.log(container);
+
 	//
 	//	->	Start the chain.
 	//
@@ -70,9 +72,14 @@ function extract_data(container)
 		//
 		//	1.	Extract all the information
 		//
-		let tmp_to = container.to.split('@');
+		let tmp_to = 	container
+						.to
+						.match(/[^< ]+(?=>)/g)[0]
+						.split('@');
+
 		let tmp_from = 	container
-						.from.match(/[^< ]+(?=>)/g)[0]
+						.from
+						.match(/[^< ]+(?=>)/g)[0]
 						.split('@');
 
 		//
