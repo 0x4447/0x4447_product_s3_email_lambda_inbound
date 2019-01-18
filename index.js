@@ -127,6 +127,8 @@ function extract_data(container)
 					+ container.date
 					+ " - "
 					+ container.subject
+					+ "/"
+					+ "email";
 
 		//
 		//	8.	Save the path for the next promise.
