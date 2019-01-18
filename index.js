@@ -116,8 +116,9 @@ function extract_data(container)
 		//	7.	Create the path where the email needs to be moved
 		//		so it is properly organized.
 		//
-		let path = 	to_domain
-					+ "/Inbox/"
+		let path = 	"Inbox/"
+					+ to_domain
+					+ "/"
 					+ to_path
 					+ "/"
 					+ company_name
