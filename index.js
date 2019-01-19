@@ -162,6 +162,8 @@ function copy_the_email(container)
 			Key: container.path
 		};
 
+		console.log(params);
+
 		//
 		//	->	Execute the query.
 		//
