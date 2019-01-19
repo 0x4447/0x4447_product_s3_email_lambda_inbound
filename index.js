@@ -119,9 +119,9 @@ function extract_data(container)
 		let path = 	"Inbox/"
 					+ to_domain
 					+ "/"
-					+ to_path
-					+ "/"
 					+ company_name
+					+ "/"
+					+ to_path
 					+ "/"
 					+ company_account
 					+ "/"
