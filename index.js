@@ -13,8 +13,6 @@ let s3 = new AWS.S3({
 //
 exports.handler = (event) => {
 
-	console.log(event)
-
 	//
 	//	1.	This JS object will contain all the data within the chain.
 	//
@@ -160,7 +158,7 @@ function copy_the_email(container)
 		//
 		let params = {
 			Bucket: process.env.BUCKET,
-			CopySource: process.env.BUCKET + "/_inbound/" + container.message_id,
+			CopySource: process.env.BUCKET + "/TMP/email_in/" + container.message_id,
 			Key: container.path
 		};
 
