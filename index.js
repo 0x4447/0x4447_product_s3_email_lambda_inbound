@@ -13,6 +13,8 @@ let s3 = new AWS.S3({
 //
 exports.handler = (event) => {
 
+	console.log(event)
+
 	//
 	//	1.	This JS object will contain all the data within the chain.
 	//
