@@ -201,7 +201,7 @@ function delete_the_email(container)
 		//
 		let params = {
 			Bucket: process.env.BUCKET,
-			Key: "_inbound/" + container.message_id
+			Key: "TMP/email_in/" + container.message_id
 		};
 
 		console.log(params)
