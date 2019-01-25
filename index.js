@@ -74,7 +74,7 @@ function extract_data(container)
 		//
 		let tmp_to = 	container
 						.to
-						.match(/[a-z0-9-]{1,30}@[a-z0-9-]{1,65}.[a-z]{1,}/gm)[0]
+						.match(/[a-z0-9-+]{1,30}@[a-z0-9-]{1,65}.[a-z]{1,}/gm)[0]
 						.split('@');
 
 		let tmp_from = 	container
