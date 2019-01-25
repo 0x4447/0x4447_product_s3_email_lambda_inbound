@@ -89,41 +89,36 @@ function extract_data(container)
 		let to_domain = tmp_to[1];
 
 		//
-		//	3.	Get the email name where the email is directed to.
-		//
-		let user_name = tmp_to[0];
-
-		//
-		//	4.	Based on the email name, we replace all the + characters, that
+		//	3.	Based on the email name, we replace all the + characters, that
 		//		can be used to organize ones on-line accounts in to /, this way
 		//		we can build a S3 patch which will automatically organize
 		//		all the email in structured folder.
 		//
-		let to_path = user_name.replace(/\+/g, "/");
+		let to_account = tmp_to[0].replace(/\+/g, "/");
 
 		//
-		//	5.	Get the domain name of the email which in our case will
+		//	4.	Get the domain name of the email which in our case will
 		//		become the company name.
 		//
-		let company_name = tmp_from[1];
+		let from_domain = tmp_from[1];
 
 		//
-		//	6.	Get the name of who sent us the email.
+		//	5.	Get the name of who sent us the email.
 		//
-		let company_account = tmp_from[0];
+		let from_account = tmp_from[0];
 
 		//
-		//	7.	Create the path where the email needs to be moved
+		//	6.	Create the path where the email needs to be moved
 		//		so it is properly organized.
 		//
 		let path = 	"Inbox/"
 					+ to_domain
 					+ "/"
-					+ company_name
+					+ to_account
 					+ "/"
-					+ to_path
+					+ from_domain
 					+ "/"
-					+ company_account
+					+ from_account
 					+ "/"
 					+ container.date
 					+ " - "
@@ -132,7 +127,7 @@ function extract_data(container)
 					+ "email";
 
 		//
-		//	8.	Save the path for the next promise.
+		//	7.	Save the path for the next promise.
 		//
 		container.path = path;
 
