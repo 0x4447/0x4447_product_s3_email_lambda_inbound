@@ -1,6 +1,8 @@
 let AWS = require('aws-sdk');
 let parser = require("mailparser").simpleParser;
 
+AWS.config.logger = console;
+
 //
 //	Initialize S3.
 //
