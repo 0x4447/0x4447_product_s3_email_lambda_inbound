@@ -15,11 +15,29 @@ let s3 = new AWS.S3({
 exports.handler = (event) => {
 
 	//
-	//	1.	This JS object will contain all the data within the chain.
+	//	1.	We need to process the path received by S3 since AWS dose escape
+	//		the string in a special way. They escape the string in a HTML style
+	//		but for whatever reason they convert spaces in to +ses.
+	//
+	let s3_key = event.Records[0].s3.object.key;
+
+	//
+	//	2.	So first we convert the + in to spaces.
+	//
+	let plus_to_space = s3_key.replace(/\+/g, ' ');
+
+	//
+	//	3.	And then we unescape the string, other wise we lose
+	//		real + characters.
+	//
+	let unescaped_key = decodeURIComponent(plus_to_space);
+
+	//
+	//	4.	This JS object will contain all the data within the chain.
 	//
 	let container = {
 		bucket: event.Records[0].s3.bucket.name,
-		key: event.Records[0].s3.object.key
+		key: unescaped_key
 	};
 
 	//
