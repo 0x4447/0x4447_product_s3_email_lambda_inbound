@@ -1,4 +1,5 @@
 let AWS = require('aws-sdk');
+let parser = require("mailparser").simpleParser;
 
 //
 //	Initialize S3.
@@ -20,17 +21,22 @@ exports.handler = (event) => {
 		from: event.Records[0].ses.mail.commonHeaders.from[0],
 		to: event.Records[0].ses.mail.commonHeaders.to[0],
 		subject: event.Records[0].ses.mail.commonHeaders.subject,
-		date: event.Records[0].ses.mail.commonHeaders.date,
 		message_id: event.Records[0].ses.mail.messageId
 	}
-
-	console.log(container);
 
 	//
 	//	->	Start the chain.
 	//
-	extract_data(container)
+	load_the_email(container)
 		.then(function(container) {
+
+			return parse_the_email(container);
+
+		}).then(function(container) {
+
+			return extract_data(container);
+
+		}).then(function(container) {
 
 			return copy_the_email(container);
 
@@ -59,6 +65,94 @@ exports.handler = (event) => {
 //	| |      | | \ \  | |__| | | |  | |  _| |_   ____) | | |____   ____) |
 //	|_|      |_|  \_\  \____/  |_|  |_| |_____| |_____/  |______| |_____/
 //
+
+//
+//	Load the email that we received from SES.
+//
+function load_the_email(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		console.info("load_the_email");
+
+		//
+		//	1.	Set the query.
+		//
+		let params = {
+			Bucket: process.env.BUCKET,
+			Key: process.env.BUCKET + "/TMP/email_in/" + container.message_id,
+		};
+
+		//
+		//	->	Execute the query.
+		//
+		s3.getObject(params, function(error, data) {
+
+			//
+			//	1.	Check for internal errors.
+			//
+			if(error)
+			{
+				return reject(error);
+			}
+
+			//
+			//	2.	Save the email for the next promise
+			//
+			container.raw_email = data.Body
+
+			//
+			//	->	Move to the next chain.
+			//
+			return resolve(container);
+
+		});
+
+	});
+}
+
+//
+//	Once the raw email is loaded we parse it with one goal in mind, get
+//	the date the of the email. This way we don't rely on the SES date, but
+//	on the real date the email was created.
+//
+//	This way we can even load in to the system old emails as long as they
+//	are in the standard raw email format, and not some proprietary solution.
+//
+//	That why will be organized with the time the emails were created, and not
+//	received in to the system.
+//
+function parse_the_email(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		//
+		//	1.	Parse the email and extract all the it necessary.
+		//
+		parser(container.raw_email, function(error, parsed) {
+
+			//
+			//	1.	Check for internal errors.
+			//
+			if(error)
+			{
+				return reject(error);
+			}
+
+			//
+			//	2.	Save the parsed email for the next promise.
+			//
+			container.date = parsed.date;
+
+			//
+			//	->	Move to the next chain.
+			//
+			return resolve(container);
+
+		});
+
+	});
+}
 
 //
 //	Extract all the data necessary to organize the incoming emails.
@@ -140,7 +234,9 @@ function extract_data(container)
 }
 
 //
-//	Copy the email to a new location.
+//	Copy the email to a new location - we don't put the email that we
+//	already have in memory since the system requires a COPY action and not
+//	a PUT action.
 //
 function copy_the_email(container)
 {
@@ -156,8 +252,6 @@ function copy_the_email(container)
 			CopySource: process.env.BUCKET + "/TMP/email_in/" + container.message_id,
 			Key: container.path
 		};
-
-		console.log(params);
 
 		//
 		//	->	Execute the query.
