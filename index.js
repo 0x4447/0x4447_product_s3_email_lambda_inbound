@@ -186,16 +186,21 @@ function extract_data(container)
 		console.info("extract_data");
 
 		//
-		//	1.	Extract all the information
+		//	1.	Since the email string can come in a form of:
+		//
+		//			Name Last <name@example.com>
+		//
+		//		We have to extract just the email address, and discard
+		//		the rest.
 		//
 		let tmp_to = 	container
 						.to
-						.match(/[a-z0-9-+]{1,30}@[a-z0-9-]{1,65}.[a-z]{1,}/gm)[0]
+						.match(/[a-zA-Z0-9-+]{1,30}@[a-z0-9-]{1,65}.[a-z]{1,}/gm)[0]
 						.split('@');
 
 		let tmp_from = 	container
 						.from
-						.match(/[a-z0-9-+]{1,30}@[a-z0-9-]{1,65}.[a-z]{1,}/gm)[0]
+						.match(/[a-zA-Z0-9-+]{1,30}@[a-z0-9-]{1,65}.[a-z]{1,}/gm)[0]
 						.split('@');
 
 		//
