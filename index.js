@@ -17,12 +17,7 @@ exports.handler = (event) => {
 	//
 	//	1.	This JS object will contain all the data within the chain.
 	//
-	let container = {
-		from: event.Records[0].ses.mail.commonHeaders.from[0],
-		to: event.Records[0].ses.mail.commonHeaders.to[0],
-		subject: event.Records[0].ses.mail.commonHeaders.subject,
-		message_id: event.Records[0].ses.mail.messageId
-	}
+	let container = {};
 
 	//
 	//	->	Start the chain.
@@ -142,7 +137,11 @@ function parse_the_email(container)
 			//
 			//	2.	Save the parsed email for the next promise.
 			//
-			container.date = parsed.date;
+			container.date			= parsed.date;
+			container.from 			= parsed.from.value[0].address,
+			container.to 			= parsed.to.value[0].address,
+			container.subject		= parsed.subject,
+			container.message_id	= parsed.messageId
 
 			//
 			//	->	Move to the next chain.
