@@ -157,11 +157,6 @@ function parse_the_email(container)
 				return reject(error);
 			}
 
-			console.error(data.from);
-			console.error(data.from.value);
-			console.error(data.to);
-			console.error(data.to.value);
-
 			//
 			//	2.	Save the parsed email for the next promise.
 			//
@@ -170,8 +165,6 @@ function parse_the_email(container)
 			container.to 			= data.to.value[0].address,
 			container.subject		= data.subject,
 			container.message_id	= data.messageId
-
-			console.log(container)
 
 			//
 			//	->	Move to the next chain.
