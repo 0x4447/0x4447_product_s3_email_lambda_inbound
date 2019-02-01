@@ -146,24 +146,25 @@ function parse_the_email(container)
 		//
 		//	1.	Parse the email and extract all the it necessary.
 		//
-		parser(container.raw_email, function(error, parsed) {
+		parser(container.raw_email, function(error, data) {
 
 			//
 			//	1.	Check for internal errors.
 			//
 			if(error)
 			{
+				console.error(data);
 				return reject(error);
 			}
 
 			//
 			//	2.	Save the parsed email for the next promise.
 			//
-			container.date			= parsed.date;
-			container.from 			= parsed.from.value[0].address,
-			container.to 			= parsed.to.value[0].address,
-			container.subject		= parsed.subject,
-			container.message_id	= parsed.messageId
+			container.date			= data.date;
+			container.from 			= data.from.value[0].address,
+			container.to 			= data.to.value[0].address,
+			container.subject		= data.subject,
+			container.message_id	= data.messageId
 
 			//
 			//	->	Move to the next chain.
