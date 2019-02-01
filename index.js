@@ -91,6 +91,7 @@ function load_the_email(container)
 			//
 			if(error)
 			{
+				console.error(params);
 				return reject(error);
 			}
 
@@ -250,8 +251,8 @@ function copy_the_email(container)
 		//	1.	Set the query.
 		//
 		let params = {
-			Bucket: process.env.BUCKET,
-			CopySource: process.env.BUCKET + "/TMP/email_in/" + container.message_id,
+			Bucket: container.bucket,
+			CopySource: container.bucket + '/' + container.key,
 			Key: container.path
 		};
 
@@ -265,6 +266,7 @@ function copy_the_email(container)
 			//
 			if(error)
 			{
+				console.error(params);
 				return reject(error);
 			}
 
@@ -291,26 +293,21 @@ function delete_the_email(container)
 		//	1.	Set the query.
 		//
 		let params = {
-			Bucket: process.env.BUCKET,
-			Key: "TMP/email_in/" + container.message_id
+			Bucket: container.bucket,
+			Key: container.key
 		};
-
-		console.log(params)
-
 
 		//
 		//	->	Execute the query.
 		//
 		s3.deleteObject(params, function(error, data) {
 
-			console.log(error)
-			console.log(data)
-
 			//
 			//	1.	Check for internal errors.
 			//
 			if(error)
 			{
+				console.error(params);
 				return reject(error);
 			}
 
