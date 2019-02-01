@@ -17,7 +17,10 @@ exports.handler = (event) => {
 	//
 	//	1.	This JS object will contain all the data within the chain.
 	//
-	let container = {};
+	let container = {
+		bucket: event.Records[0].s3.bucket.name,
+		key: event.Records[0].s3.object.key
+	};
 
 	//
 	//	->	Start the chain.
@@ -74,8 +77,8 @@ function load_the_email(container)
 		//	1.	Set the query.
 		//
 		let params = {
-			Bucket: process.env.BUCKET,
-			Key: process.env.BUCKET + "/TMP/email_in/" + container.message_id,
+			Bucket: container.bucket,
+			Key: container.key
 		};
 
 		//
