@@ -157,6 +157,8 @@ function parse_the_email(container)
 				return reject(error);
 			}
 
+			console.error(data);
+
 			//
 			//	2.	Save the parsed email for the next promise.
 			//
