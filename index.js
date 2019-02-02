@@ -17,36 +17,23 @@ let s3 = new AWS.S3({
 exports.handler = (event) => {
 
 	//
-	//	1.	We need to process the path received by S3 since AWS dose escape
-	//		the string in a special way. They escape the string in a HTML style
-	//		but for whatever reason they convert spaces in to +ses.
-	//
-	let s3_key = event.Records[0].s3.object.key;
-
-	//
-	//	2.	So first we convert the + in to spaces.
-	//
-	let plus_to_space = s3_key.replace(/\+/g, ' ');
-
-	//
-	//	3.	And then we unescape the string, other wise we lose
-	//		real + characters.
-	//
-	let unescaped_key = decodeURIComponent(plus_to_space);
-
-	//
-	//	4.	This JS object will contain all the data within the chain.
+	//	1.	This JS object will contain all the data within the chain.
 	//
 	let container = {
 		bucket: event.Records[0].s3.bucket.name,
-		key: unescaped_key
+		unescaped_key: '',
+		escaped_key: event.Records[0].s3.object.key
 	};
 
 	//
 	//	->	Start the chain.
 	//
-	load_the_email(container)
+	unescape_key(container)
 		.then(function(container) {
+
+			return load_the_email(container);
+
+		}).then(function(container) {
 
 			return parse_the_email(container);
 
@@ -85,6 +72,41 @@ exports.handler = (event) => {
 //
 
 //
+//	We need to process the path received by S3 since AWS dose escape
+//	the string in a special way. They escape the string in a HTML style
+//	but for whatever reason they convert spaces in to +ses.
+//
+function unescape_key(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		console.info("unescape_key");
+
+		//
+		//	1.	First we convert the + in to spaces.
+		//
+		let plus_to_space = container.escaped_key.replace(/\+/g, ' ');
+
+		//
+		//	2.	And then we unescape the string, other wise we lose
+		//		real + characters.
+		//
+		let unescaped_key = decodeURIComponent(plus_to_space);
+
+		//
+		//	3.	Save the result for the next promise.
+		//
+		container.unescaped_key = unescaped_key;
+
+		//
+		//	->	Move to the next chain.
+		//
+		return resolve(container);
+
+	});
+}
+
+//
 //	Load the email that we received from SES.
 //
 function load_the_email(container)
@@ -98,7 +120,7 @@ function load_the_email(container)
 		//
 		let params = {
 			Bucket: container.bucket,
-			Key: container.key
+			Key: container.unescaped_key
 		};
 
 		//
@@ -267,6 +289,10 @@ function extract_data(container)
 //	already have in memory since the system requires a COPY action and not
 //	a PUT action.
 //
+//		WARNING: 	We are using the escaped_key value, because there is a
+//					know bug in the AWS JS SDK which won't unescape the
+//					string, so you have to do it - AWS is aware of this issue.
+//
 function copy_the_email(container)
 {
 	return new Promise(function(resolve, reject) {
@@ -278,7 +304,7 @@ function copy_the_email(container)
 		//
 		let params = {
 			Bucket: container.bucket,
-			CopySource: container.bucket + '/' + container.key,
+			CopySource: container.bucket + '/' + container.escaped_key,
 			Key: container.path
 		};
 
@@ -320,7 +346,7 @@ function delete_the_email(container)
 		//
 		let params = {
 			Bucket: container.bucket,
-			Key: container.key
+			Key: container.unescaped_key
 		};
 
 		//
