@@ -1,4 +1,7 @@
 let AWS = require('aws-sdk');
+let parser = require("mailparser").simpleParser;
+
+AWS.config.logger = console;
 
 //
 //	Initialize S3.
@@ -17,20 +20,28 @@ exports.handler = (event) => {
 	//	1.	This JS object will contain all the data within the chain.
 	//
 	let container = {
-		from: event.Records[0].ses.mail.commonHeaders.from[0],
-		to: event.Records[0].ses.mail.commonHeaders.to[0],
-		subject: event.Records[0].ses.mail.commonHeaders.subject,
-		date: event.Records[0].ses.mail.commonHeaders.date,
-		message_id: event.Records[0].ses.mail.messageId
-	}
-
-	console.log(container);
+		bucket: event.Records[0].s3.bucket.name,
+		unescaped_key: '',
+		escaped_key: event.Records[0].s3.object.key
+	};
 
 	//
 	//	->	Start the chain.
 	//
-	extract_data(container)
+	unescape_key(container)
 		.then(function(container) {
+
+			return load_the_email(container);
+
+		}).then(function(container) {
+
+			return parse_the_email(container);
+
+		}).then(function(container) {
+
+			return extract_data(container);
+
+		}).then(function(container) {
 
 			return copy_the_email(container);
 
@@ -61,6 +72,135 @@ exports.handler = (event) => {
 //
 
 //
+//	We need to process the path received by S3 since AWS dose escape
+//	the string in a special way. They escape the string in a HTML style
+//	but for whatever reason they convert spaces in to +ses.
+//
+function unescape_key(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		console.info("unescape_key");
+
+		//
+		//	1.	First we convert the + in to spaces.
+		//
+		let plus_to_space = container.escaped_key.replace(/\+/g, ' ');
+
+		//
+		//	2.	And then we unescape the string, other wise we lose
+		//		real + characters.
+		//
+		let unescaped_key = decodeURIComponent(plus_to_space);
+
+		//
+		//	3.	Save the result for the next promise.
+		//
+		container.unescaped_key = unescaped_key;
+
+		//
+		//	->	Move to the next chain.
+		//
+		return resolve(container);
+
+	});
+}
+
+//
+//	Load the email that we received from SES.
+//
+function load_the_email(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		console.info("load_the_email");
+
+		//
+		//	1.	Set the query.
+		//
+		let params = {
+			Bucket: container.bucket,
+			Key: container.unescaped_key
+		};
+
+		//
+		//	->	Execute the query.
+		//
+		s3.getObject(params, function(error, data) {
+
+			//
+			//	1.	Check for internal errors.
+			//
+			if(error)
+			{
+				console.error(params);
+				return reject(error);
+			}
+
+			//
+			//	2.	Save the email for the next promise
+			//
+			container.raw_email = data.Body
+
+			//
+			//	->	Move to the next chain.
+			//
+			return resolve(container);
+
+		});
+
+	});
+}
+
+//
+//	Once the raw email is loaded we parse it with one goal in mind, get
+//	the date the of the email. This way we don't rely on the SES date, but
+//	on the real date the email was created.
+//
+//	This way we can even load in to the system old emails as long as they
+//	are in the standard raw email format, and not some proprietary solution.
+//
+//	That why will be organized with the time the emails were created, and not
+//	received in to the system.
+//
+function parse_the_email(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		//
+		//	1.	Parse the email and extract all the it necessary.
+		//
+		parser(container.raw_email, function(error, data) {
+
+			//
+			//	1.	Check for internal errors.
+			//
+			if(error)
+			{
+				console.error(data);
+				return reject(error);
+			}
+
+			//
+			//	2.	Save the parsed email for the next promise.
+			//
+			container.date			= data.date;
+			container.from 			= data.from.value[0].address,
+			container.to 			= data.to.value[0].address,
+			container.subject		= data.subject,
+			container.message_id	= data.messageId
+
+			//
+			//	->	Move to the next chain.
+			//
+			return resolve(container);
+
+		});
+
+	});
+}
+
+//
 //	Extract all the data necessary to organize the incoming emails.
 //
 function extract_data(container)
@@ -70,16 +210,21 @@ function extract_data(container)
 		console.info("extract_data");
 
 		//
-		//	1.	Extract all the information
+		//	1.	Since the email string can come in a form of:
+		//
+		//			Name Last <name@example.com>
+		//
+		//		We have to extract just the email address, and discard
+		//		the rest.
 		//
 		let tmp_to = 	container
 						.to
-						.match(/[a-z0-9-+]{1,30}@[a-z0-9-]{1,65}.[a-z]{1,}/gm)[0]
+						.match(/(?:[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-zA-Z0-9-]*[a-zA-Z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/gm)[0]
 						.split('@');
 
 		let tmp_from = 	container
 						.from
-						.match(/[a-z0-9-+]{1,30}@[a-z0-9-]{1,65}.[a-z]{1,}/gm)[0]
+						.match(/(?:[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-zA-Z0-9-]*[a-zA-Z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/gm)[0]
 						.split('@');
 
 		//
@@ -140,7 +285,13 @@ function extract_data(container)
 }
 
 //
-//	Copy the email to a new location.
+//	Copy the email to a new location - we don't put the email that we
+//	already have in memory since the system requires a COPY action and not
+//	a PUT action.
+//
+//		WARNING: 	We are using the escaped_key value, because there is a
+//					know bug in the AWS JS SDK which won't unescape the
+//					string, so you have to do it - AWS is aware of this issue.
 //
 function copy_the_email(container)
 {
@@ -152,12 +303,10 @@ function copy_the_email(container)
 		//	1.	Set the query.
 		//
 		let params = {
-			Bucket: process.env.BUCKET,
-			CopySource: process.env.BUCKET + "/TMP/email_in/" + container.message_id,
+			Bucket: container.bucket,
+			CopySource: container.bucket + '/' + container.escaped_key,
 			Key: container.path
 		};
-
-		console.log(params);
 
 		//
 		//	->	Execute the query.
@@ -169,6 +318,7 @@ function copy_the_email(container)
 			//
 			if(error)
 			{
+				console.error(params);
 				return reject(error);
 			}
 
@@ -195,26 +345,21 @@ function delete_the_email(container)
 		//	1.	Set the query.
 		//
 		let params = {
-			Bucket: process.env.BUCKET,
-			Key: "TMP/email_in/" + container.message_id
+			Bucket: container.bucket,
+			Key: container.unescaped_key
 		};
-
-		console.log(params)
-
 
 		//
 		//	->	Execute the query.
 		//
 		s3.deleteObject(params, function(error, data) {
 
-			console.log(error)
-			console.log(data)
-
 			//
 			//	1.	Check for internal errors.
 			//
 			if(error)
 			{
+				console.error(params);
 				return reject(error);
 			}
 
