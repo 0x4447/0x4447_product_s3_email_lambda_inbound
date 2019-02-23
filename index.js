@@ -303,7 +303,7 @@ function copy_the_email(container)
 		let params = {
 			Bucket: container.bucket,
 			CopySource: container.bucket + '/' + container.escaped_key,
-			Key: container.path
+			Key: container.path + '.eml'
 		};
 
 		//
