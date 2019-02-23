@@ -267,7 +267,7 @@ function extract_data(container)
 					+ " - "
 					+ container.subject
 					+ "/"
-					+ "email";
+					+ "email.eml";
 
 		//
 		//	7.	Save the path for the next promise.
@@ -303,7 +303,7 @@ function copy_the_email(container)
 		let params = {
 			Bucket: container.bucket,
 			CopySource: container.bucket + '/' + container.escaped_key,
-			Key: container.path + '.eml'
+			Key: container.path
 		};
 
 		//
