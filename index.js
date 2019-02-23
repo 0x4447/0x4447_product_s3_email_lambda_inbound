@@ -1,4 +1,5 @@
 let AWS = require('aws-sdk');
+let moment = require('moment');
 let parser = require("mailparser").simpleParser;
 
 //
@@ -34,6 +35,10 @@ exports.handler = (event) => {
 		}).then(function(container) {
 
 			return parse_the_email(container);
+
+		}).then(function(container) {
+
+			return format_time(container);
 
 		}).then(function(container) {
 
@@ -194,6 +199,30 @@ function parse_the_email(container)
 			return resolve(container);
 
 		});
+
+	});
+}
+
+//
+//	We format the date and time to make sure that when the folder is saved
+//	in S3, the object will sort one after the other which makes it much
+//	easier to see the latest emails.
+//
+function format_time(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		console.info('format_time');
+
+		//
+		//	1.	Format the date found in the email message itself.
+		//
+		container.date = moment(container.date).format("YYYY-MM-DD HH:MM:SSS Z");
+
+		//
+		//	->	Move to the next chain.
+		//
+		return resolve(container);
 
 	});
 }
