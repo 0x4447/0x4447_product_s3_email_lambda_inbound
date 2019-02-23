@@ -50,7 +50,7 @@ exports.handler = (event) => {
 
 		}).then(function(container) {
 
-			return delete_the_email(container);
+			return container; //delete_the_email(container);
 
 		}).then(function(container) {
 
@@ -280,7 +280,13 @@ function extract_data(container)
 		let from_account = tmp_from[0];
 
 		//
-		//	6.	Create the path where the email needs to be moved
+		//	6.	S3 objects have a limit of how they they can be named
+		//		so we remove everything but...
+		//
+		container.subject = container.subject.replace(/[^a-zA-Z0-9 &@:,$=+?;]/g, "_");
+
+		//
+		//	7.	Create the path where the email needs to be moved
 		//		so it is properly organized.
 		//
 		let path = 	"Inbox/"
@@ -299,7 +305,7 @@ function extract_data(container)
 					+ "email.eml";
 
 		//
-		//	7.	Save the path for the next promise.
+		//	8.	Save the path for the next promise.
 		//
 		container.path = path;
 
