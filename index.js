@@ -50,7 +50,7 @@ exports.handler = (event) => {
 
 		}).then(function(container) {
 
-			return container; //delete_the_email(container);
+			return delete_the_email(container);
 
 		}).then(function(container) {
 
