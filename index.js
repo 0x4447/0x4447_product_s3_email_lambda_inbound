@@ -1,4 +1,5 @@
 let AWS = require('aws-sdk');
+let moment = require('moment');
 let parser = require("mailparser").simpleParser;
 
 //
@@ -37,6 +38,10 @@ exports.handler = (event) => {
 
 		}).then(function(container) {
 
+			return format_time(container);
+
+		}).then(function(container) {
+
 			return extract_data(container);
 
 		}).then(function(container) {
@@ -45,7 +50,7 @@ exports.handler = (event) => {
 
 		}).then(function(container) {
 
-			return delete_the_email(container);
+			return container; //delete_the_email(container);
 
 		}).then(function(container) {
 
@@ -199,6 +204,30 @@ function parse_the_email(container)
 }
 
 //
+//	We format the date and time to make sure that when the folder is saved
+//	in S3, the object will sort one after the other which makes it much
+//	easier to see the latest emails.
+//
+function format_time(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		console.info('format_time');
+
+		//
+		//	1.	Format the date found in the email message itself.
+		//
+		container.date = moment(container.date).format("YYYY-MM-DD HH:MM:SSS Z");
+
+		//
+		//	->	Move to the next chain.
+		//
+		return resolve(container);
+
+	});
+}
+
+//
 //	Extract all the data necessary to organize the incoming emails.
 //
 function extract_data(container)
@@ -251,7 +280,13 @@ function extract_data(container)
 		let from_account = tmp_from[0];
 
 		//
-		//	6.	Create the path where the email needs to be moved
+		//	6.	S3 objects have a limit of how they they can be named
+		//		so we remove everything but...
+		//
+		container.subject = container.subject.replace(/[^a-zA-Z0-9 &@:,$=+?;]/g, "_");
+
+		//
+		//	7.	Create the path where the email needs to be moved
 		//		so it is properly organized.
 		//
 		let path = 	"Inbox/"
@@ -267,10 +302,10 @@ function extract_data(container)
 					+ " - "
 					+ container.subject
 					+ "/"
-					+ "email";
+					+ "email.eml";
 
 		//
-		//	7.	Save the path for the next promise.
+		//	8.	Save the path for the next promise.
 		//
 		container.path = path;
 
