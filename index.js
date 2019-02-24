@@ -278,7 +278,7 @@ function parse_the_email(container)
 			container.date			= data.date;
 			container.from 			= data.from.value[0].address,
 			container.to 			= data.to.value[0].address,
-			container.subject		= data.subject,
+			container.subject		= data.subject || "No Subject",
 			container.message_id	= data.messageId
 
 			//
