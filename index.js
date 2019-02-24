@@ -10,6 +10,20 @@ let s3 = new AWS.S3({
 });
 
 //
+//	Initialize SES.
+//
+let ses = new AWS.SES({
+	apiVersion: '2010-12-01'
+});
+
+//
+//	This variable will hold all the domain available in SES so we don't
+//	have to query SES each time the Lambda runs, we query SES only when
+//	the lambda starts from scratch to circumvent the 1 sec request limit.
+//
+let domains = [];
+
+//
 //	This Lambda will filter all the incoming emails based on their From and To
 //	field.
 //
@@ -21,14 +35,20 @@ exports.handler = (event) => {
 	let container = {
 		bucket: event.Records[0].s3.bucket.name,
 		unescaped_key: '',
-		escaped_key: event.Records[0].s3.object.key
+		escaped_key: event.Records[0].s3.object.key,
+		domains: domains,
+		folder: "Inbox"
 	};
 
 	//
 	//	->	Start the chain.
 	//
-	unescape_key(container)
+	get_email_domains(container)
 		.then(function(container) {
+
+			return unescape_key(container);
+
+		}).then(function(container) {
 
 			return load_the_email(container);
 
@@ -43,6 +63,14 @@ exports.handler = (event) => {
 		}).then(function(container) {
 
 			return extract_data(container);
+
+		}).then(function(container) {
+
+			return where_to_save(container);
+
+		}).then(function(container) {
+
+			return create_s3_boject_key(container);
 
 		}).then(function(container) {
 
@@ -73,6 +101,66 @@ exports.handler = (event) => {
 //	| |      | | \ \  | |__| | | |  | |  _| |_   ____) | | |____   ____) |
 //	|_|      |_|  \_\  \____/  |_|  |_| |_____| |_____/  |______| |_____/
 //
+
+//
+//	List all the emails added to SES, so we can use them to decided where to
+//	store the emails. If in the Inbox, or sent. This is important when you
+//	upload emails by hand to back them up.
+//
+//	Without doing this everything goes to the Inbox folder.
+//
+function get_email_domains(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		//
+		//	1.	If we have already the domains we don't query SES anymore
+		//		since you can only query SES once a second. To solve this
+		//		limitation we grab the data once, and save it in to memory.
+		//
+		if(container.domains.length)
+		{
+			//
+			//	->	Move to the next chain.
+			//
+			return resolve(container);
+		}
+
+		console.info("get_email_domains");
+
+		//
+		//	2.	Create the query.
+		//
+		let params = {
+			IdentityType: "Domain",
+			MaxItems: 100
+		};
+
+		//
+		//	->	Execute the query.
+		//
+		ses.listIdentities(params, function(error, data) {
+
+			//
+			//	1.	Check for internal errors.
+			//
+			if(error)
+			{
+				console.error(params);
+				return reject(error);
+			}
+
+			container.domains = data.Identities;
+
+			//
+			//	->	Move to the next chain.
+			//
+			return resolve(container);
+
+		});
+
+	});
+}
 
 //
 //	We need to process the path received by S3 since AWS dose escape
@@ -258,7 +346,7 @@ function extract_data(container)
 		//	2.	Get the domain name of the receiving end, so we can group
 		//		emails by all the domain that were added to SES.
 		//
-		let to_domain = tmp_to[1];
+		container.to_domain = tmp_to[1];
 
 		//
 		//	3.	Based on the email name, we replace all the + characters, that
@@ -266,18 +354,18 @@ function extract_data(container)
 		//		we can build a S3 patch which will automatically organize
 		//		all the email in structured folder.
 		//
-		let to_account = tmp_to[0].replace(/\+/g, "/");
+		container.to_account = tmp_to[0].replace(/\+/g, "/");
 
 		//
 		//	4.	Get the domain name of the email which in our case will
 		//		become the company name.
 		//
-		let from_domain = tmp_from[1];
+		container.from_domain = tmp_from[1];
 
 		//
 		//	5.	Get the name of who sent us the email.
 		//
-		let from_account = tmp_from[0];
+		container.from_account = tmp_from[0];
 
 		//
 		//	6.	S3 objects have a limit of how they they can be named
@@ -286,28 +374,73 @@ function extract_data(container)
 		container.subject = container.subject.replace(/[^a-zA-Z0-9 &@:,$=+?;]/g, "_");
 
 		//
-		//	7.	Create the path where the email needs to be moved
-		//		so it is properly organized.
+		//	->	Move to the next chain.
 		//
-		let path = 	"Inbox/"
-					+ to_domain
-					+ "/"
-					+ to_account
-					+ "/"
-					+ from_domain
-					+ "/"
-					+ from_account
-					+ "/"
-					+ container.date
-					+ " - "
-					+ container.subject
-					+ "/"
-					+ "email.eml";
+		return resolve(container);
+
+	});
+}
+
+//
+//	Once we have the domains from SES, and we know the value of the To
+//	field, we can decide where the emails should be saved.
+//
+function where_to_save(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		console.info("where_to_save");
 
 		//
-		//	8.	Save the path for the next promise.
+		//	1.	Go over each domain from SES to see if there is a match
+		//		for the To email field, and if there is not a match we
+		//		know the emails should be saved in the Sent folder.
 		//
-		container.path = path;
+		container.domains.forEach(function(domain) {
+
+			if(domain != container.to_domain)
+			{
+				container.folder = "Sent";
+			}
+
+		});
+
+		//
+		//	->	Move to the next chain.
+		//
+		return resolve(container);
+
+	});
+}
+
+//
+//	Create Key path for the S3 object to be saved to.
+//
+function create_s3_boject_key(container)
+{
+	return new Promise(function(resolve, reject) {
+
+		console.info("create_s3_boject_key");
+
+		//
+		//	1.	Create the path where the email needs to be moved
+		//		so it is properly organized.
+		//
+		container.path = container.folder
+					   + "/"
+					   + container.to_domain
+					   + "/"
+					   + container.to_account
+					   + "/"
+					   + container.from_domain
+					   + "/"
+					   + container.from_account
+					   + "/"
+					   + container.date
+					   + " - "
+					   + container.subject
+					   + "/"
+					   + "email.eml";
 
 		//
 		//	->	Move to the next chain.
