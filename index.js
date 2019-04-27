@@ -37,7 +37,7 @@ exports.handler = (event) => {
 		unescaped_key: '',
 		escaped_key: event.Records[0].s3.object.key,
 		domains: domains,
-		folder: "Inbox"
+		folder: "Sent"
 	};
 
 	//
@@ -411,15 +411,16 @@ function where_to_save(container)
 		console.info("where_to_save");
 
 		//
-		//	1.	Go over each domain from SES to see if there is a match
-		//		for the To email field, and if there is not a match we
-		//		know the emails should be saved in the Sent folder.
+		//	1.	Since by default we assume that the email should be saved
+		//		in the Sent folder, we need to loop over the SES domains
+		//		and check if there is a match with the To: domain found in
+		//		the email.
 		//
 		container.domains.forEach(function(domain) {
 
-			if(domain != container.to_domain)
+			if(domain == container.to_domain)
 			{
-				container.folder = "Sent";
+				container.folder = "Inbox";
 			}
 
 		});
