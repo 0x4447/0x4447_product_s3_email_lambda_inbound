@@ -372,7 +372,22 @@ function extract_data(container)
 		container.from_account = tmp_from[0];
 
 		//
-		//	6.	S3 objects have a limit of how they they can be named
+		//	6.	Set all the strings to lower case, because some times different
+		//		on-line services will have your email in all caps. For example
+		//		Priceline will do this.
+		//
+		//		Since in the next step we compare the domain that is in SES
+		//		with the data from the email, wee need to have it all in the
+		//		same format for the if() statement to work correctly and
+		//		generate the right path where to save the email.
+		//
+		container.to_domain = container.to_domain.toLowerCase();
+		container.to_account = container.to_account.toLowerCase();
+		container.from_domain = container.from_domain.toLowerCase();
+		container.from_account = container.from_account.toLowerCase();
+
+		//
+		//	7.	S3 objects have a limit of how they they can be named
 		//		so we remove everything but...
 		//
 		container.subject = container.subject.replace(/[^a-zA-Z0-9 &@:,$=+?;]/g, "_");
