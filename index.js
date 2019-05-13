@@ -309,7 +309,7 @@ function format_time(container)
 		//
 		//	1.	Format the date found in the email message itself.
 		//
-		container.date = moment(container.date).format("YYYY-MM-DD HH:MM:SSS Z");
+		container.date = moment(container.date).format("YYYY-MM-DD HH:mm:ss Z");
 
 		//
 		//	->	Move to the next chain.
