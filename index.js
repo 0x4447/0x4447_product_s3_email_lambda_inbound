@@ -262,6 +262,8 @@ function parse_the_email(container)
 {
 	return new Promise(function(resolve, reject) {
 
+		console.info("parse_the_email");
+
 		//
 		//	1.	Parse the email and extract all the it necessary.
 		//
